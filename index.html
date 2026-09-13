@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction Order Predictor — Detailed Kinetics Calculator</title>
+<style>
+:root{--blue:#1d4ed8;--violet:#6d28d9;--ink:#172033;--muted:#64748b;--bg:#f5f7fb;--card:#fff;--line:#dbe3ef;--green:#15803d;--amber:#b45309;--red:#b91c1c}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;padding:34px 20px}header .wrap,main{max-width:1200px;margin:auto}h1{margin:0 0 8px;font-size:32px}h2{color:#1e40af;margin-top:0}h3{color:#334155}.subtitle{opacity:.93;margin:0}
+main{padding:20px}.card{background:var(--card);border-radius:15px;padding:22px;margin:18px 0;box-shadow:0 5px 20px rgba(15,23,42,.07)}
+.note{background:#eff6ff;border-left:5px solid var(--blue);padding:14px;border-radius:8px;margin:12px 0}.warning{background:#fffbeb;border-left-color:var(--amber)}.success{background:#f0fdf4;border-left-color:var(--green)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:850px){.grid{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid var(--line);padding:9px;text-align:center}th{background:#eff6ff}input,select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px}
+button{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:10px 15px;font-weight:700;cursor:pointer;margin:4px}button.secondary{background:#475569}button.danger{background:#dc2626}button.success{background:var(--green)}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-weight:700;font-size:13px}.result{border-left:5px solid var(--green);background:#f0fdf4;padding:17px;border-radius:8px}
+.formula{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:14px;font-family:"Times New Roman",serif;font-size:18px;overflow:auto}.mono{font-family:Consolas,monospace}
+details{border:1px solid var(--line);border-radius:10px;padding:13px;margin:10px 0;background:#fff}summary{font-weight:700;cursor:pointer}small,.muted{color:var(--muted)}
+.step{border-left:4px solid #93c5fd;padding:12px 15px;margin:11px 0;background:#f8fbff}.step strong{color:#1e3a8a}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:850px){.two{grid-template-columns:1fr}}
+.legend{display:flex;gap:8px;flex-wrap:wrap}.legend span{padding:5px 9px;border-radius:999px;background:#f1f5f9}.footer{font-size:13px;color:var(--muted);padding:10px 0 40px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>Reaction Order Predictor</h1><p class="subtitle">Detailed 0th–10th order analysis from concentration–time data using both integrated and differential methods.</p></div></header>
+<main>
+<div class="card">
+<h2>1. Enter Experimental Data</h2>
+<p class="muted">Enter time and reactant concentration. Use at least 4–5 points for a meaningful experimental comparison. Time should increase and concentration should remain positive.</p>
+<table id="dataTable"><thead><tr><th>#</th><th>Time, t</th><th>Concentration, C<sub>A</sub></th><th>Action</th></tr></thead><tbody></tbody></table>
+<button onclick="addRow()">+ Add point</button><button class="secondary" onclick="loadExample()">Load example</button><button class="danger" onclick="clearData()">Clear</button><button class="success" onclick="analyze()">Analyze reaction order</button>
+<div class="note"><b>Purpose:</b> The calculator does not simply output an order. It first explains which method is appropriate, performs the calculations, compares candidate orders 0–10, and then gives an exam-style conclusion.</div>
+</div>
+<div id="output"></div>
+<div class="card">
+<h2>2. Method Selection — What is the difference?</h2>
+<div class="grid">
+<div><h3>Integrated (integral) method</h3><p>We integrate the rate law and transform concentration into a quantity that should vary linearly with time if the assumed order is correct.</p><div class="formula">n = 0: C<sub>A</sub> = C<sub>A0</sub> − kt<br>n = 1: ln C<sub>A</sub> = ln C<sub>A0</sub> − kt<br>n ≠ 1: C<sub>A</sub><sup>1−n</sup> = C<sub>A0</sub><sup>1−n</sup> + (n−1)kt</div><p><b>Why use it?</b> It uses the entire concentration–time dataset directly and is generally less sensitive to experimental noise than numerical differentiation.</p></div>
+<div><h3>Differential method</h3><p>We estimate the instantaneous rate from the concentration–time data and compare rate with concentration.</p><div class="formula">−dC<sub>A</sub>/dt = kC<sub>A</sub><sup>n</sup><br>ln(rate) = ln k + n ln C<sub>A</sub></div><p><b>Why use it?</b> It estimates the order directly from the rate law and is a useful independent check, but numerical differentiation can amplify measurement noise.</p></div>
+</div>
+</div>
+</main>
+<script>
+const tbody=document.querySelector('#dataTable tbody');
+function addRow(t='',c=''){const r=tbody.insertRow();r.innerHTML='<td>'+r.rowIndex+'</td><td><input type="number" step="any" value="'+t+'"></td><td><input type="number" step="any" value="'+c+'"></td><td><button class="danger" onclick="this.closest(\'tr\').remove();renumber()">Remove</button></td>';}
+function renumber(){[...tbody.rows].forEach((r,i)=>r.cells[0].textContent=i+1)}
+function clearData(){tbody.innerHTML='';for(let i=0;i<6;i++)addRow()}
+function loadExample(){tbody.innerHTML='';[[0,1.0000],[1,0.5000],[2,0.3333],[3,0.2500],[4,0.2000],[5,0.1667]].forEach(x=>addRow(...x))}
+function getData(){return [...tbody.rows].map(r=>({t:+r.cells[1].querySelector('input').value,c:+r.cells[2].querySelector('input').value})).filter(x=>Number.isFinite(x.t)&&Number.isFinite(x.c)).sort((a,b)=>a.t-b.t)}
+function mean(a){return a.reduce((s,x)=>s+x,0)/a.length}
+function regression(x,y){const xm=mean(x),ym=mean(y);let sxx=0,sxy=0,syy=0;for(let i=0;i<x.length;i++){const dx=x[i]-xm,dy=y[i]-ym;sxx+=dx*dx;sxy+=dx*dy;syy+=dy*dy}const m=sxy/sxx,b=ym-m*xm,r2=(sxy*sxy)/(sxx*syy);return{m,b,r2,xm,ym,sxx,sxy,syy}}
+function fmt(x){if(!Number.isFinite(x))return'undefined';return(Math.abs(x)>=1e4||(Math.abs(x)<1e-4&&x!==0))?x.toExponential(6):x.toFixed(6)}
+function transform(c,n){if(n===0)return c;if(n===1)return Math.log(c);return Math.pow(c,1-n)}
+function transformLabel(n){if(n===0)return'C';if(n===1)return'ln(C)';return`C^(${1-n})`}
+function integratedResults(d){const out=[];for(let n=0;n<=10;n++){const x=d.map(q=>q.t),y=d.map(q=>transform(q.c,n));const r=regression(x,y);let k;if(n===0||n===1)k=-r.m;else k=r.m/(n-1);out.push({n,x,y,r,k})}return out}
+function differentialResults(d){const rows=[];for(let i=0;i<d.length;i++){let a,b,method;if(i===0){a=0;b=1;method='forward difference'}else if(i===d.length-1){a=i-1;b=i;method='backward difference'}else{a=i-1;b=i+1;method='central difference'}const rate=-(d[b].c-d[a].c)/(d[b].t-d[a].t);if(rate>0&&d[i].c>0)rows.push({index:i,t:d[i].t,c:d[i].c,rate,method,a:a+1,b:b+1,lnc:Math.log(d[i].c),lnr:Math.log(rate)})}if(rows.length<2)return null;const r=regression(rows.map(q=>q.lnc),rows.map(q=>q.lnr));return{rows,r,n:r.m,k:Math.exp(r.b)}}
+function reasonBox(best,diff){const nearest=Math.round(diff.n);const close=Math.abs(diff.n-nearest)<=0.25;const same=close&&nearest===best.n;return `<div class="card"><h2>Why this method and order?</h2><div class="step"><strong>Step 1 — Start from the data type.</strong><br>You supplied concentration as a function of time, so the integrated method is the natural primary method because the full concentration–time history is available.</div><div class="step"><strong>Step 2 — Use the differential method as an independent check.</strong><br>We estimate −dC/dt numerically and test whether rate follows a power law, rate = kC<sup>n</sup>. This is useful, but differentiation can amplify noise.</div><div class="step"><strong>Step 3 — Compare candidate integrated orders.</strong><br>Order ${best.n} gives the highest R² (${fmt(best.r.r2)}), so its integrated transform is the most linear.</div><div class="step"><strong>Step 4 — Compare with differential order.</strong><br>The differential fit gives n = ${fmt(diff.n)}. ${same?'This is close to the same integer order, so both methods support the same conclusion.':'The two methods differ. This can happen because numerical differentiation is noise-sensitive; inspect data quality and prefer the integrated fit as the more stable concentration–time test unless there is a strong experimental reason otherwise.'}</div><div class="result"><b>Exam-style conclusion:</b> The best-supported integer order is <b>${best.n}.</b> The integrated method gives the highest linearity, while the differential method gives n ≈ ${fmt(diff.n)}. Therefore the data ${same?'support':'most strongly support'} a ${best.n}th-order rate law.</div></div>`}
+function analyze(){const d=getData(),out=document.getElementById('output');if(d.length<3){out.innerHTML='<div class="card note warning">Enter at least 3 valid points.</div>';return}if(d.some((q,i)=>q.c<=0||(i&&q.t===d[i-1].t))){out.innerHTML='<div class="card note warning">Time values must not repeat and concentrations must be positive.</div>';return}
+const ints=integratedResults(d),best=[...ints].sort((a,b)=>b.r.r2-a.r.r2)[0],diff=differentialResults(d);
+let html=`<div class="card"><h2>3. Final Result</h2><div class="result"><span class="badge">BEST INTEGRATED FIT</span><h3>Reaction order = ${best.n}</h3><p>Best integrated transformation: <b>${transformLabel(best.n)} vs time</b></p><p>Highest R² = <b>${fmt(best.r.r2)}</b></p><p>Calculated k = <b>${fmt(best.k)}</b></p>${diff?`<p>Differential estimate: <b>n = ${fmt(diff.n)}</b>; R² = ${fmt(diff.r.r2)}; k ≈ ${fmt(diff.k)}</p>`:''}</div></div>`;
+html+=`<div class="card"><h2>4. Step-by-Step Integrated Method</h2><p><b>General starting law:</b> −dC<sub>A</sub>/dt = kC<sub>A</sub><sup>n</sup>. For each integer order 0–10 we use the correct integrated equation and then test linearity.</p>`;
+for(const z of ints){const n=z.n,lab=transformLabel(n),eq=n===0?'C = C₀ − kt':n===1?'ln C = ln C₀ − kt':`C^(1−${n}) = C₀^(1−${n}) + (${n}−1)kt`;html+=`<details ${n===best.n?'open':''}><summary>Order ${n}: ${lab} vs t | R² = ${fmt(z.r.r2)} ${n===best.n?'← SELECTED':''}</summary><div class="step"><strong>Equation used:</strong><div class="formula">${eq}</div></div><div class="step"><strong>Step A — Transform every concentration:</strong><table><tr><th>Point</th><th>t</th><th>C</th><th>${lab}</th></tr>${d.map((q,i)=>`<tr><td>${i+1}</td><td>${fmt(q.t)}</td><td>${fmt(q.c)}</td><td>${fmt(z.y[i])}</td></tr>`).join('')}</table></div><div class="step"><strong>Step B — Linear regression:</strong><div class="formula">y = mt + b<br>m = ${fmt(z.r.m)}<br>b = ${fmt(z.r.b)}<br>R² = ${fmt(z.r.r2)}</div><p>R² closer to 1 means the transformed data are more linear.</p></div><div class="step"><strong>Step C — Calculate k:</strong><div class="formula">${n===0||n===1?'k = −m':`k = m/(${n}−1)`} = <b>${fmt(z.k)}</b></div></div></details>`}
+html+=`</div>`;
+if(diff){html+=`<div class="card"><h2>5. Step-by-Step Differential Method</h2><div class="step"><strong>Step 1 — Start with the differential rate law.</strong><div class="formula">rate = −dC/dt = kC<sup>n</sup></div></div><div class="step"><strong>Step 2 — Estimate experimental rate.</strong><p>For an interior point we use a central difference:</p><div class="formula">−dC/dt ≈ −(C<sub>i+1</sub> − C<sub>i−1</sub>)/(t<sub>i+1</sub> − t<sub>i−1</sub>)</div><p>At the first point a forward difference is used; at the final point a backward difference is used.</p><table><tr><th>Point</th><th>C</th><th>Method</th><th>Rate calculation</th><th>Rate</th></tr>${diff.rows.map(q=>{const dd=d.slice(q.a-1,q.b);const calc=`−(${fmt(d[q.b-1].c)} − ${fmt(d[q.a-1].c)})/(${fmt(d[q.b-1].t)} − ${fmt(d[q.a-1].t)})`;return `<tr><td>${q.index+1}</td><td>${fmt(q.c)}</td><td>${q.method}</td><td>${calc}</td><td>${fmt(q.rate)}</td></tr>`}).join('')}</table></div><div class="step"><strong>Step 3 — Take logarithms.</strong><div class="formula">ln(rate) = ln(k) + n ln(C)</div></div><div class="step"><strong>Step 4 — Build transformed table.</strong><table><tr><th>Point</th><th>C</th><th>Rate</th><th>ln(C)</th><th>ln(Rate)</th></tr>${diff.rows.map(q=>`<tr><td>${q.index+1}</td><td>${fmt(q.c)}</td><td>${fmt(q.rate)}</td><td>${fmt(q.lnc)}</td><td>${fmt(q.lnr)}</td></tr>`).join('')}</table></div><div class="step"><strong>Step 5 — Regression.</strong><div class="formula">ln(rate) = n ln(C) + ln(k)<br>Slope n = <b>${fmt(diff.n)}</b><br>Intercept ln(k) = <b>${fmt(diff.r.b)}</b><br>k = e^(ln k) = <b>${fmt(diff.k)}</b><br>R² = <b>${fmt(diff.r.r2)}</b></div></div></div>`}
+html+=reasonBox(best,diff||{n:NaN,r:{r2:NaN},k:NaN});
+html+=`<div class="card"><h2>6. What the R² comparison means</h2><table><tr><th>Order</th><th>Linear plot</th><th>R²</th><th>Interpretation</th></tr>${ints.map(z=>`<tr><td>${z.n}</td><td>${transformLabel(z.n)} vs t</td><td>${fmt(z.r.r2)}</td><td>${z.n===best.n?'Best fit':'Lower than selected fit'}</td></tr>`).join('')}</table><div class="note"><b>Important:</b> A high R² alone does not prove a mechanism. It indicates which tested integrated model is most consistent with the supplied concentration–time data. Experimental uncertainty, concentration range, and systematic error should still be considered.</div></div>`;
+out.innerHTML=html}
+loadExample();
+</script>
+</body>
+</html>
